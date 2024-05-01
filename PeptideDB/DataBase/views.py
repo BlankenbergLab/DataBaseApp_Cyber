@@ -18,9 +18,18 @@ from django.views.decorators.csrf import csrf_exempt
 # from .utils import return_merge_peptidedata
 from pathlib import Path
 from django.conf import settings
+from django.db import transaction
+from datetime import datetime
+import uuid
+from django.contrib.auth.models import User
+from urllib.parse import quote
 
+all_users = User.objects.all()
+
+# print(all_users)
 
 base_dir = settings.MEDIA_ROOT
+
 
 # Function to sanitize paths to prevent path traversal attacks
 def sanitize_path(path):
@@ -29,10 +38,12 @@ def sanitize_path(path):
     # Ensure path does not start with '/' or drive letters to prevent absolute paths
     if safe_path.startswith(("/", "\\")) or (":" in safe_path and safe_path[1] == ":"):
         raise ValueError("Invalid path")
+    print("###", safe_path)
     return safe_path
-    
+
 def errors(request):
-    return render(request, 'DataBase/error.html')
+    
+    return render(request, 'DataBase/error.html', {'msg':request.GET.get('message')})
 
 def contact(request):
     logout(request)
@@ -109,48 +120,35 @@ def DB(request):
 
     return render(request, 'DataBase/index.html', {'form': form, 'acv':acv, 'clv':clv, 'meta_data':meta_data, 'is_authenticated':request.user.is_authenticated, 'host_name': request.get_host()})
 
-@staff_member_required
-@csrf_protect
-def data_upload(request):
-    if request.method == 'POST':
-        form = UploadFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            now = datetime.now()
-            dt_string = now.strftime("%d_%m_%Y__%H_%M_%S")
-            file_name = "CleavageDB_"+dt_string+'_data_file.csv'
-            # objs = UploadedData.objects.all()
-            validation_pass = handle_uploaded_file(request, request.FILES['file'], file_name, form.cleaned_data['reference_number'], form.cleaned_data['reference_link'])
+def saveMetadata(metadata):
+    now = datetime.now()
+    dt_string = now.strftime("%d_%m_%Y__%H_%M_%S")
+    file_name = "CleavageDB_"+dt_string+'_data_file.csv'
+    a = UploadedData.objects.create(
+        datafile_index='DBF'+str(len(UploadedData.objects.all())),
+        experiment_name=metadata['experiment_title'],
+        data_upload_date=now.strftime("%Y-%m-%d"),
+        data_upload_time=now.strftime("%H:%M:%S"),
+        user_name=metadata['user_name'],
+        data_description=metadata['experiment_description'],
+        data_file_name=file_name,
+        experiment_type=metadata['experiment_type'],
+        reference_number=metadata['reference_number'],
+        reference_link=metadata['reference_link'],
+        upload_type=metadata['upload_type']
+        # file_UUID= uuid.uuid4,
+        )
+    a.save()
 
-            if validation_pass['validation']:
-                a = UploadedData.objects.create(
-                    datafile_index='DBF'+str(len(UploadedData.objects.all())),
-                    experiment_name=form.cleaned_data['experiment_name'],
-                    data_upload_date=now.strftime("%Y-%m-%d"),
-                    data_upload_time=now.strftime("%H:%M:%S"),
-                    user_name=form.cleaned_data['user'],
-                    data_description=form.cleaned_data['description'],
-                    data_file_name=file_name,
-                    experiment_type=form.cleaned_data['experiment_type'],
-                    reference_number=form.cleaned_data['reference_number'],
-                    reference_link=form.cleaned_data['reference_link'],
-                    )
-                a.save()
-
-                return HttpResponseRedirect('/data_upload')
-            else:
-                return render(request, 'DataBase/validation_error.html', {'data': validation_pass['error_column'] })
-    else:
-        form = UploadFileForm()
-    return render(request, 'DataBase/upload.html', {'form': form})
-  
 def handle_uploaded_file(request, f, file_name, ref_number, ref_link):
     headers = ['Protein Accession', 'Gene symbol', 'Protein name', 'Cleavage site', 'Peptide sequence', 'Annotated sequence', 'Cellular Compartment', 'Species', 'Database identified', 'Discription', 'Reference']
     line = f.readline().decode('UTF-8')
-
+    
     for i, h in enumerate(line.replace('\r\n', '').split('\t')):
         if h == headers[i]:
             pass
         else:
+            print('#####', i, h)
             return {"validation": False, "error_column": h}
 
     # Sanitize the file_name to prevent path traversal
@@ -165,7 +163,7 @@ def handle_uploaded_file(request, f, file_name, ref_number, ref_link):
         for chunk in f.chunks():
             destination.write(chunk)
 
-    import_data_to_model(destination_path, ref_number, ref_link)
+    # import_data_to_model(destination_path, ref_number, ref_link)
     return {'validation': True}
 
 @csrf_protect
@@ -195,52 +193,23 @@ def success(request):
 def download_data_report(request):
     return render(request,  'DataBase/uploaded_data_report.html', {})
 
+def import_tsv_data_to_model(file_name):
 
-@staff_member_required
-@csrf_protect
-def import_data_to_model(file_name, ref_num, ref_link):
-    f = open(settings.UPLOAD_DATA+"/"+file_name)
-    lines = f.readlines()
+    with open(file_name, 'r') as f:
+        count = PeptideSeq.objects.all().count()
+        start = count
 
-    count = PeptideSeq.objects.all().count()
-    start = count
-    for line in lines[1:]:
-        chunks = line.split('\t')
-        # print(chunks)
-        # num_of_obj = PeptideSeq.objects.filter(
-        #     sequence=chunks[0],
-        #     master_protein_accession=chunks[1],
-        #      master_protein_description=chunks[2],
-        #     cleavage_site=chunks[3],
-        #     annotated_sequence=chunks[4],
-        #     abundance=chunks[5],
-        # ).count()
+        # Use a list to collect new objects for bulk_create
+        new_objects = []
 
-        # if num_of_obj > 0:
-        #     pass
-        # else:
+        for line in f:
+            chunks = line.split('\t')
 
-        count = count + 1
+            # Validate data
+            if len(chunks) < 10:
+                continue  # Skip invalid lines
 
-        if not PeptideSeq.objects.filter( 
-                    accession=chunks[0],
-                    gene_symbol=chunks[1],
-                    protein_name=chunks[2],
-                    cleavage_site=chunks[3],
-                    peptide_sequence=chunks[4],
-                    annotated_sequence=chunks[5],
-                    cellular_compartment=chunks[6],
-                    species=chunks[7],
-                    database_identified=chunks[8],
-                    description=chunks[9],
-                    reference_number=ref_num,
-                    reference_link=ref_link,
-
-            ).exists():
-
-            new_obj = PeptideSeq.objects.create(
-
-                db_id='DBS0'+str(count),
+            if not PeptideSeq.objects.filter(
                 accession=chunks[0],
                 gene_symbol=chunks[1],
                 protein_name=chunks[2],
@@ -253,28 +222,44 @@ def import_data_to_model(file_name, ref_num, ref_link):
                 description=chunks[9],
                 reference_number=ref_num,
                 reference_link=ref_link,
-                data_file_name= file_name
+            ).exists():
+                count += 1
+                new_obj = PeptideSeq(
+                    db_id='DBS0' + str(count),
+                    accession=chunks[0],
+                    gene_symbol=chunks[1],
+                    protein_name=chunks[2],
+                    cleavage_site=chunks[3],
+                    peptide_sequence=chunks[4],
+                    annotated_sequence=chunks[5],
+                    cellular_compartment=chunks[6],
+                    species=chunks[7],
+                    database_identified=chunks[8],
+                    description=chunks[9],
+                    reference_number=ref_num,
+                    reference_link=ref_link,
+                    data_file_name=file_name,
+                )
+
+                new_objects.append(new_obj)
+
+    # Use transaction.atomic to ensure atomicity
+    with transaction.atomic():
+        if new_objects:
+            PeptideSeq.objects.bulk_create(new_objects)
+
+        # Update the database version if data was changed
+        if PeptideSeq.objects.all().count() != start:
+            vsn = DataBaseVersion.objects.latest('time_stamp')
+            w = write_metadata_json(vsn.version)
+
+            v = DataBaseVersion(
+                version=w['version'],
+                time_stamp=w['release_date'],
             )
 
-            new_obj.save()
-        else:
-            pass
+            v.save()
 
-    now = datetime.now()
-    vsn = DataBaseVersion.objects.latest('time_stamp')
-    count_end = PeptideSeq.objects.all().count()
-
-    if count_end != start:
-        updated_version = DataBaseVersion.objects.latest('time_stamp')
-        w = write_metadata_json(updated_version.version)
-
-        v = DataBaseVersion.objects.create(
-            version = w['version'] ,
-            time_stamp = w['release_date'],
-        )
-
-        v.save()
-    
 def PepView(request):
     data = {}
 
@@ -439,12 +424,15 @@ def upload_backup(request):
     return render(request, 'load_data_from_backup_file.html')
     
 def fileUploader(request):
+    print('OK')
     if request.method == 'POST':  
         file = request.FILES['file'].read()
         fileName =  os.path.basename(request.POST['filename'])
+        
         existingPath = request.POST['existingPath']
         # Sanitize the 'existingPath' to ensure it's a relative path not escaping its intended boundaries
         existingPath = sanitize_path(existingPath)
+
         end = request.POST['end']
         nextSlice = request.POST['nextSlice']
 
@@ -504,32 +492,47 @@ def fileUploader(request):
 def UploadedView(request):
     return render(request, 'DataBase/load_data_from_backup_file.html', {})
 
+@staff_member_required
 @csrf_exempt
 def upload_chunk(request):
+
     file = request.FILES['file']
     file_id = request.POST['resumableIdentifier']
     chunk_number = request.POST['resumableChunkNumber']
     total_chunks = int(request.POST['resumableTotalChunks'])
+
+    metadata = {
+        'upload_type': request.GET.get('upt'),
+        'experiment_type': request.GET.get('ext'),
+        'experiment_title': request.GET.get('ept'),
+        'reference_number': request.GET.get('exn'),
+        'reference_link': request.GET.get('erl'),
+        'experiment_description': request.GET.get('edt'),
+        'user_name': str(request.user),
+    }
+
+    saveMetadata(metadata)
 
     # Sanitize the file_id and chunk_number to prevent path traversal
     safe_file_id = ''.join([c for c in file_id if c.isalnum()])
     safe_chunk_number = ''.join([c for c in chunk_number if c.isdigit()])
 
     # Construct the directory path securely
-    directory_path = os.path.join(settings.MEDIA_ROOT, 'tmp')
-    if not os.path.exists(directory_path):
-        os.makedirs(directory_path)
+    temp_directory = os.path.join(settings.MEDIA_ROOT, 'tmp')
 
+    if not os.path.exists(temp_directory):
+        os.makedirs(temp_directory)
+        
     # Construct the file path securely
-    file_path = os.path.join(directory_path, f"{safe_file_id}_{safe_chunk_number}")
+    file_path = os.path.join(temp_directory, f"{safe_file_id}_{safe_chunk_number}")
 
-    # Safely write the file chunks
     with open(file_path, 'wb') as f:
         for chunk in file.chunks():
             f.write(chunk)
 
     return JsonResponse({'status': 'success'})
 
+@staff_member_required
 @csrf_exempt
 def merge_chunks(request):
     file_id = request.GET.get('file_id', None)
@@ -538,13 +541,24 @@ def merge_chunks(request):
 
     if not file_id or not total_chunck or not file_name:
         # Handle the case where any parameter is None
-        return HttpResponseRedirect('/error/?message=' + quote('Missing parameters'))
-
+        return HttpResponseRedirect('/errors/?message=' + quote('Missing parameters'))
+    
     # Sanitize the file_name to avoid path traversal
     file_name = os.path.basename(file_name)
 
-    # Secure directory path
-    directory_path = os.path.join(settings.UPLOAD_BACKUP, '')
+    #file type checking
+    if file_name.split('.')[len(file_name.split('.'))-1]  == 'json':
+        # Secure directory path
+        directory_path = os.path.join(settings.UPLOAD_BACKUP, '')
+    elif file_name.split('.')[len(file_name.split('.'))-1]  == 'tsv':
+        # Secure directory path
+        directory_path = os.path.join(settings.UPLOAD_DATA, '')
+    else:
+        return HttpResponseRedirect('/errors/?message=' + quote('in correct file type, please upload a valid json file..'))
+
+    # # Secure directory path
+    # directory_path = os.path.join(settings.UPLOAD_BACKUP, '')
+
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
@@ -554,22 +568,47 @@ def merge_chunks(request):
     try:
         with open(final_path, 'wb') as final_file:
             for i in range(1, int(total_chunck) + 1):
-                chunk_name = f'{file_id}_{i}'
-                chunk_path = os.path.join(tmp_dir, chunk_name)
+                # Sanitize the file_id and chunk_number to prevent path traversal
+                safe_file_id = ''.join([c for c in file_id if c.isalnum()])
+                chunk_path = os.path.join(tmp_dir, f'{safe_file_id}_{i}')
                 
                 if not os.path.exists(chunk_path):
                     # Handle missing chunk file
-                    return HttpResponseRedirect('/error/?message=' + quote('Missing chunk number ' + str(i)))
+                    return HttpResponseRedirect('/errors/?message=' + quote('Missing chunk number ' + str(i)))
 
                 with open(chunk_path, 'rb') as chunk:
                     final_file.write(chunk.read())
-                os.remove(chunk_path)
+                # os.remove(chunk_path)
 
     except IOError as e:
         # Handle general IO errors (e.g., disk full, file not found, etc.)
-        return HttpResponseRedirect('/error/?message=' + quote(str(e)))
+        return HttpResponseRedirect('/errors/?message=' + quote(str(e)))
+            
+    if os.path.exists(tmp_dir) and os.path.isdir(tmp_dir):
+        # List all files in the directory
+        files = os.listdir(tmp_dir)
+        
+        # Remove each file in the directory
+        for filename in files:
+            file_path = os.path.join(tmp_dir, filename)
+            try:
+                # Check if it's a file (and not a directory or link) and remove it
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+                else:
+                    print(f"Skipping non-file: {file_path}")
+            except Exception as e:
+                print(f"Failed to delete {file_path}. Reason: {e}")
+    else:
+        print(f"The directory {tmp_dir} does not exist or is not a directory")
 
-    return HttpResponseRedirect('/load_backupdata/?file_name=' + quote(file_name))
+
+    if file_name.split('.')[len(file_name.split('.'))-1] == 'json':
+        return HttpResponseRedirect('/load_backupdata/?file_name=' + quote(file_name))
+    elif file_name.split('.')[len(file_name.split('.'))-1] == 'tvs':
+        import_tsv_data_to_model(final_path)
+        return HttpResponseRedirect('/load_backupdata/?file_name=' + quote(file_name))
+
 
 @staff_member_required
 def upload_page(request):
@@ -586,112 +625,119 @@ def load_backupdata(request):
     file_name = request.GET.get('file_name', None)
     file_name = os.path.basename(file_name)
 
-    with open(settings.UPLOAD_BACKUP+"/"+file_name, 'r') as file:
+    if not file_name:
+        return HttpResponseRedirect('/error/?message=' + quote("file is not available " +  file_name ))
+
+    backup_file_path = os.path.join(settings.UPLOAD_BACKUP, file_name)
+
+    if not os.path.exists(backup_file_path):
+        return HttpResponseRedirect('/error/?message='+ quote("file is not found" +  file_name ))
+
+    with open(backup_file_path, 'r') as file:
         data = json.load(file)
 
-    p_count = PeptideSeq.objects.all().count()
-    # b_count = BugReporting.objects.all().count()
+    # Retrieve existing data to minimize redundant queries
+    existing_peptides = PeptideSeq.objects.values_list(
+        'accession', 'gene_symbol', 'protein_name', 'cleavage_site', 'peptide_sequence'
+    )
+    existing_peptides_set = {tuple(peptide) for peptide in existing_peptides}
 
-    for i in data:
-        if  'DataBase.peptideseq' == i['model']:
+    existing_bugs = BugReporting.objects.values_list(
+        'title', 'report_date', 'report_time', 'bug_description', 'types'
+    )
+    existing_bugs_set = {tuple(bug) for bug in existing_bugs}
 
-            # count = PeptideSeq.objects.all().count()
-            p_count = p_count + 1
+    new_peptides = []
+    new_bugs = []
+    new_versions = []
+    new_files = []
 
-            if not PeptideSeq.objects.filter( 
-                        accession=i['fields']['accession'],
-                        gene_symbol=i['fields']['gene_symbol'],
-                        protein_name=i['fields']['protein_name'],
-                        cleavage_site=i['fields']['cleavage_site'],
-                        peptide_sequence=i['fields']['peptide_sequence'],
-                        annotated_sequence=i['fields']['annotated_sequence'],
-                        cellular_compartment=i['fields']['cellular_compartment'],
-                        species=i['fields']['species'],
-                        database_identified=i['fields']['database_identified'],
-                        description=i['fields']['description'],
-                        reference_number=i['fields']['reference_number'],
-                        reference_link=i['fields']['reference_link'],
-                        # data_file_name= i['fields']['data_file_name'],
+    for item in data:
+        model = item.get('model', '')
+        fields = item.get('fields', {})
 
-                ).exists():
+        if model == 'DataBase.peptideseq':
+            peptide_data = (
+                fields.get('accession'),
+                fields.get('gene_symbol'),
+                fields.get('protein_name'),
+                fields.get('cleavage_site'),
+                fields.get('peptide_sequence'),
+            )
 
-                new_obj = PeptideSeq.objects.create(
-
-                    db_id='DuploadsuploadsuploadsBS0'+str(p_count),
-                    accession=i['fields']['accession'],
-                    gene_symbol=i['fields']['gene_symbol'],
-                    protein_name=i['fields']['protein_name'],
-                    cleavage_site=i['fields']['cleavage_site'],
-                    peptide_sequence=i['fields']['peptide_sequence'],
-                    annotated_sequence=i['fields']['annotated_sequence'],
-                    cellular_compartment=i['fields']['cellular_compartment'],
-                    species=i['fields']['species'],
-                    database_identified=i['fields']['database_identified'],
-                    description=i['fields']['description'],
-                    reference_number=i['fields']['reference_number'],
-                    reference_link=i['fields']['reference_link'],
-                    data_file_name= file_name,
-                    # data_file_name= i['fields']['file_name'],
+            if peptide_data not in existing_peptides_set:
+                new_peptides.append(
+                    PeptideSeq(
+                        db_id=f'DBS0{len(existing_peptides_set) + len(new_peptides)}',
+                        accession=fields.get('accession'),
+                        gene_symbol=fields.get('gene_symbol'),
+                        protein_name=fields.get('protein_name'),
+                        cleavage_site=fields.get('cleavage_site'),
+                        peptide_sequence=fields.get('peptide_sequence'),
+                        annotated_sequence=fields.get('annotated_sequence'),
+                        cellular_compartment=fields.get('cellular_compartment'),
+                        species=fields.get('species'),
+                        database_identified=fields.get('database_identified'),
+                        description=fields.get('description'),
+                        reference_number=fields.get('reference_number'),
+                        reference_link=fields.get('reference_link'),
+                        data_file_name=file_name,
+                    )
                 )
 
-                new_obj.save()
-            else:
-                pass
+        elif model == 'DataBase.bugreporting':
+            bug_data = (
+                fields.get('title'),
+                fields.get('report_date'),
+                fields.get('report_time'),
+                fields.get('bug_description'),
+                fields.get('types'),
+            )
 
-        elif 'DataBase.bugreporting' == i['model']:
-
-            if not BugReporting.objects.filter( 
-                        title=i['fields']['title'],
-                        report_date=i['fields']['report_date'],
-                        report_time=i['fields']['report_time'],
-                        bug_description=i['fields']['bug_description'],
-                        types=i['fields']['types'],
-
-                ).exists():
-
-                new_obj = BugReporting.objects.create(
-                        title=i['fields']['title'],
-                        report_date=i['fields']['report_date'],
-                        report_time=i['fields']['report_time'],
-                        bug_description=i['fields']['bug_description'],
-                        types=i['fields']['types'],
+            if bug_data not in existing_bugs_set:
+                new_bugs.append(
+                    BugReporting(
+                        title=fields.get('title'),
+                        report_date=fields.get('report_date'),
+                        report_time=fields.get('report_time'),
+                        bug_description=fields.get('bug_description'),
+                        types=fields.get('types'),
+                    )
                 )
 
-                new_obj.save()
-            else:
-                pass
-
-        elif 'databaseversion' in i['model']:
-          
-            if not DataBaseVersion.objects.filter( 
-                        version=i['fields']['version'],
-                        # time_stamp=i['fields']['time_stamp'],
-
-                ).exists():
-
-                new_obj = DataBaseVersion.objects.create(
-                        version=i['fields']['version'],
-                        time_stamp=i['fields']['time_stamp'],
+        elif model == 'DataBaseVersion' and 'version' in fields:
+            new_versions.append(
+                DataBaseVersion(
+                    version=fields.get('version'),
+                    time_stamp=fields.get('time_stamp'),
                 )
+            )
 
-                new_obj.save()
-            else:
-                pass
-
-        elif 'DataBase.file' == i['model']:
-            if not File.objects.filter( 
-                        name=i['fields']['name'],
-                ).exists():
-
-                new_obj = PeptideSeq.objects.create(
-                    name=i['fields']['name'],
+        elif model == 'DataBase.file':
+            new_files.append(
+                File(
+                    name=fields.get('name'),
                 )
+            )
 
-                new_obj.save()
-            else:
-                pass
+    # Use bulk_create to save new objects efficiently
+    if new_peptides:
+        PeptideSeq.objects.bulk_create(new_peptides)
 
+    if new_bugs:
+        BugReporting.objects.bulk_create(new_bugs)
 
-    os.remove(settings.UPLOAD_BACKUP+"/"+file_name)
+    if new_versions:
+        DataBaseVersion.objects.bulk_create(new_versions)
+
+    if new_files:
+        File.objects.bulk_create(new_files)
+
+    # Clean up by removing the backup file
+    try:
+        # os.remove(backup_file_path)
+        print("Hello")
+    except Exception as e:
+        print(f"Error removing backup file: {e}")
 
     return render(request, 'DataBase/upload_complete.html', {})

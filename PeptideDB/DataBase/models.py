@@ -23,7 +23,8 @@ class PeptideSeq(models.Model):
         ordering = ['db_id']
 
 class UploadedData(models.Model):
-       
+
+    upload_type = models.CharField(max_length=10,  null=True) 
     datafile_index = models.CharField(max_length=20,  null=True)
     experiment_name = models.CharField(max_length=100,  null=True)
     data_upload_time = models.TimeField(null=True)

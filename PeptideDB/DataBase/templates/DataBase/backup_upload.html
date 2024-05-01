@@ -5,61 +5,83 @@
     <script src="{% static 'js/test.js' %}"></script>
 
     <div style="margin: 20px;">
-        <h2>Upload a file...</h2>
-        <h4 id="file-upload-progress"> </h4>
+        <div class="col-lg-6 pe-lg-0 wow fadeInRight" data-wow-delay="0.1s" style="min-height: 400px;">
+            {% csrf_token %}
+            <div class="bg-light text-center p-5 wow fadeIn" data-wow-delay="0.5s">
+                {% csrf_token %}
+                <form>
+                    <div class="row g-3" id="bugs-form">
+                        <div class="col-12 col-sm-6 w-100">
+                            <h5 id="post-error"> </h5>
+                        </div>
 
-        <div id="dropTarget" style="width: 500px; height: 200px; border: 2px dashed #aaa; text-align: center; padding: 70px 0;">
-            Drop files here to upload
+                        <div class="col-12 col-sm-6 w-100">
+                            <span> Upload Type </span>
+                            <select id='upload_type' class="form-select border-0"  style="height: 55px;">
+                                <option value="" selected='true'  >Select Upload Type</option>
+                                <option value="tsv">New Data</option>
+                                <option value="json">Backup Data</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-sm-6 w-100">
+                            <span> Experiment Type </span>
+                            <select id="experiment_type" class="form-select border-0"  style="height: 55px;">
+                                <option value="" selected='true' >Select Experiment Type</option>
+                                <option value="dimethyl">Dimethyl</option>
+                                <option value="iTRAQ">iTRAQ</option>
+                                <option value="TMT">TMT</option>
+                                <option value="label-free">Label-free</option>
+                                <option value="mixed-label">Mixed-label</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-sm-6 w-100">
+                            <span> Experiment Title</span>
+                            <input id="experiment_title" type="text" name="title" class="form-control border-0" placeholder="Experiment Title" style="height: 55px;">
+                        </div>
+
+                        <div class="col-12 col-sm-6 w-100">
+                            <span> Reference Number </span>
+                            <input id="experiment_number" type="text" name="title" class="form-control border-0" placeholder="Reference Number" style="height: 55px;">
+                        </div>
+
+                        <div class="col-12 col-sm-6 w-100">
+                            <span> Reference Link </span>
+                            <input id="experiment_ref_link" type="text" name="title"  class="form-control border-0" placeholder="Reference Link" style="height: 55px;">
+                        </div>
+
+                        <div class="col-12">
+                            <textarea id="experiment_detail_text" class="form-control border-0" name="details" placeholder="Note"></textarea>
+                        </div>
+
+                        <div id="dropTarget" style="width: 500px; height: 200px; border: 2px dashed #aaa; text-align: center; padding: 70px 0;">
+                            Drop files here to upload
+                        </div>
+                        <br>
+                
+                        <h3> Or </h3>
+                
+                        <br>
+                        <input type="file" id="browseButton" value="Browse Files">
+
+                        <div id='file_name_to_display'> </div>
+
+                    </div>
+                </form>
+            </div>
         </div>
-        <br>
-
-        <h3> Or </h3>
-
-        <br>
-        <input type="button" id="browseButton" value="Browse Files">
     </div>
 
+
+
+
+<div id="back_upload_button_div"> <button  id="back_upload_button" class="form-button" type="submit">Submit</button></div>
+    
+
     <!-- CSRF token -->
-    <script>
-        const csrftoken = getCookie('csrftoken');
 
-        function getCookie(name) {
-            const cookieValue = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-            return cookieValue ? cookieValue.pop() : '';
-        }
-    </script>
+    <script src="{% static 'js/backup_upload.js' %}"></script> 
 
-    <script>
-        let r = new Resumable({
-            target: '/upload_chunk/',
-            chunkSize: 4 * 1024 * 1024,
-            simultaneousUploads: 3,
-            testChunks: false,
-            throttleProgressCallbacks: 1,
-            headers: { 'X-CSRFToken': csrftoken }
-        });
-
-        r.assignDrop(document.getElementById('dropTarget'));
-        r.assignBrowse(document.getElementById('browseButton'));
-
-        r.on('fileAdded', function(file, event) {
-            r.upload();
-        });
-
-        r.on('fileSuccess', function(file, message) {
-            console.log('File upload completed');
-            var file_name = file.file.name
-            console.log(file.uniqueIdentifier)
-            window.location.href = `/merge_chunks/?file_id=${file.uniqueIdentifier}&total_chunck=${file.chunks.length}&file_name=${file_name}`
-        });
-
-        r.on('fileProgress', function(file) {
-            let progress = parseFloat(file.progress() * 100).toFixed(2);
-            console.log('File progress:', progress);
-            document.querySelector('#file-upload-progress').textContent = `${progress}% Uploaded`
-
-        });
-
-    </script>
 
 {% endblock %}

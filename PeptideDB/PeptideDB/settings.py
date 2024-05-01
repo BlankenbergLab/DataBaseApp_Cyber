@@ -26,12 +26,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '' # Require
+SECRET_KEY = 'asfdasfdasfsdf' # Require
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [''] #Change Accordingly 
+ALLOWED_HOSTS = ['*'] #Change Accordingly 
 
 
 # Application definition
@@ -85,7 +85,8 @@ WSGI_APPLICATION = 'PeptideDB.wsgi.application'
 
 DATABASES = {
     'default': {
-      
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -135,3 +136,16 @@ CSP_FONT_SRC = ("'self'", 'fonts.gstatic.com', 'cdnjs.cloudflare.com', 'cdn.jsde
 CSP_IMG_SRC = ("'self'", 'https://www.lerner.ccf.org')
 CSP_SCRIPT_SRC = ("'self'", 'https://code.jquery.com', 'cdn.jsdelivr.net', 'cdn.datatables.net', 'cdnjs.cloudflare.com', 'cdn.rawgit.com', 'https://cdn.rawgit.com' )
 CSP_STYLE_SRC = ("'self'",  'https://cdn.jsdelivr.net/', 'fonts.googleapis.com', 'cdnjs.cloudflare.com', 'cdn.datatables.net',"'unsafe-inline'")
+
+# Add connect-src directive to allow connections to diced.lerner.ccf.org
+CSP_CONNECT_SRC = ("'self'", 'http://diced.lerner.ccf.org', 'https://diced.lerner.ccf.org')
+
+# Combine all CSP directives
+CSP = {
+    'default-src': ("'self'"),
+    'font-src': CSP_FONT_SRC,
+    'img-src': CSP_IMG_SRC,
+    'script-src': CSP_SCRIPT_SRC,
+    'style-src': CSP_STYLE_SRC,
+    'connect-src': CSP_CONNECT_SRC,
+}

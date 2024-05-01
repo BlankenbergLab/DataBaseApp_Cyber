@@ -8,7 +8,7 @@
     {% csrf_token %}
     <h2 class="mdl-card__title-text">Upload data </h2>
     {% csrf_token %}
-    <form action="{% url 'data_upload' %}" method="POST" enctype="multipart/form-data" class="form-contact" style="width: 40%;">
+    {% comment %} <form action="{% url 'data_upload' %}" method="POST" enctype="multipart/form-data" class="form-contact" style="width: 40%;"> {% endcomment %}
       {%csrf_token%}
       {% for error in form.non_field_errors %}
       <div class="form-group has-errors text-danger small">
@@ -63,8 +63,8 @@
           {{form.file}}
       </div>
 
-      <button class="form-button" type="submit">Submit</button>
-    </form>
+      <button id="tsv_upload" class="form-button" type="submit">Submit</button>
+    {% comment %} </form> {% endcomment %}
 
   </div>
  
@@ -118,16 +118,7 @@
   </div>  
 </div>
 
-<!-- <script type="text/javascript"> 
-  var help_button = document.querySelector('#help-button')
-   help_button.addEventListener('click', (e)=>{
-   if (document.querySelector('#help-section').style.display == 'none'){
-       console.log("help")
-      document.querySelector('#help-section').style.display = 'block'
-   } else{
-      document.querySelector('#help-section').style.display = 'none'
-   }
- })
-</script> -->
+
+<script src="{% static 'js/backup_upload.js' %}"></script> 
 
 {% endblock %}

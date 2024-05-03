@@ -140,31 +140,21 @@ def saveMetadata(metadata):
         )
     a.save()
 
-def handle_uploaded_file(request, f, file_name, ref_number, ref_link):
+def validate_data_file(file_path):
     headers = ['Protein Accession', 'Gene symbol', 'Protein name', 'Cleavage site', 'Peptide sequence', 'Annotated sequence', 'Cellular Compartment', 'Species', 'Database identified', 'Discription', 'Reference']
-    line = f.readline().decode('UTF-8')
+
+    with open(file_path, 'r') as file:
+    # Read the first line from the file
+        line = file.readline()
+        for i, h in enumerate(line.replace('\r\n', '').split('\t')):
+            print(h.strip('\n'), headers[i])
+            if h.strip('\n') == headers[i]:
+                pass
+            else:
+                print('#####', i, h)
+                return {"validation": False, "error_column": h}
+        return {'validation': True, "error_column": None}
     
-    for i, h in enumerate(line.replace('\r\n', '').split('\t')):
-        if h == headers[i]:
-            pass
-        else:
-            print('#####', i, h)
-            return {"validation": False, "error_column": h}
-
-    # Sanitize the file_name to prevent path traversal
-    file_name = os.path.basename(file_name)
-
-    if not os.path.exists(settings.UPLOAD_DATA):
-        os.makedirs(settings.UPLOAD_DATA)
-
-    destination_path = settings.UPLOAD_DATA+"/"+file_name
-
-    with open(destination_path, 'wb+') as destination:
-        for chunk in f.chunks():
-            destination.write(chunk)
-
-    # import_data_to_model(destination_path, ref_number, ref_link)
-    return {'validation': True}
 
 @csrf_protect
 def bugs(request):
@@ -193,17 +183,23 @@ def success(request):
 def download_data_report(request):
     return render(request,  'DataBase/uploaded_data_report.html', {})
 
-def import_tsv_data_to_model(file_name):
+def import_tsv_data_to_model(file_path, ref_num, ref_link):
 
-    with open(file_name, 'r') as f:
+    with open(file_path, 'r') as f:
+
+            # Skip the first line
+        f.readline()
+
         count = PeptideSeq.objects.all().count()
         start = count
 
+        file_name = file_path.split('/')[len(file_path.split('/'))-1]
         # Use a list to collect new objects for bulk_create
         new_objects = []
 
         for line in f:
-            chunks = line.split('\t')
+ 
+            chunks = line.strip('\n').split('\t')
 
             # Validate data
             if len(chunks) < 10:
@@ -220,8 +216,8 @@ def import_tsv_data_to_model(file_name):
                 species=chunks[7],
                 database_identified=chunks[8],
                 description=chunks[9],
-                reference_number=ref_num,
-                reference_link=ref_link,
+                # reference_number=ref_num,
+                # reference_link=ref_link,
             ).exists():
                 count += 1
                 new_obj = PeptideSeq(
@@ -539,6 +535,9 @@ def merge_chunks(request):
     total_chunck = request.GET.get('total_chunck', None)
     file_name = request.GET.get('file_name', None)
 
+    ref_link  =request.GET.get('exn')
+    ref_num = request.GET.get('erl')
+
     if not file_id or not total_chunck or not file_name:
         # Handle the case where any parameter is None
         return HttpResponseRedirect('/errors/?message=' + quote('Missing parameters'))
@@ -602,13 +601,22 @@ def merge_chunks(request):
     else:
         print(f"The directory {tmp_dir} does not exist or is not a directory")
 
+    if file_name.split('.')[len(file_name.split('.'))-1] == 'tsv':
+        validation = validate_data_file(final_path)
+        if validation['validation']:
+            import_tsv_data_to_model(final_path, ref_num, ref_link)
+            return HttpResponseRedirect('/errors/?message= : '+quote("Data Uploaded"))
+        else:
+            return HttpResponseRedirect('/errors/?message= Data Uploaded Failed, Error in Column name: '+quote(validation['error_column']))
 
     if file_name.split('.')[len(file_name.split('.'))-1] == 'json':
         return HttpResponseRedirect('/load_backupdata/?file_name=' + quote(file_name))
-    elif file_name.split('.')[len(file_name.split('.'))-1] == 'tvs':
-        import_tsv_data_to_model(final_path)
-        return HttpResponseRedirect('/load_backupdata/?file_name=' + quote(file_name))
+    
+    # elif file_name.split('.')[len(file_name.split('.'))-1] == 'tvs':
 
+    #     print("##################")
+    #     
+    #     return HttpResponseRedirect('/load_backupdata/?file_name=' + quote(file_name))
 
 @staff_member_required
 def upload_page(request):

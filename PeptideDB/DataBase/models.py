@@ -1,6 +1,24 @@
 from django.db import models
 from .utils import  time_stamp
 
+class UploadedData(models.Model):
+
+    upload_type = models.CharField(max_length=10,  null=True) 
+    datafile_index = models.CharField(max_length=20,  null=True)
+    experiment_name = models.CharField(max_length=100,  null=True)
+    data_upload_time = models.TimeField(null=True)
+    data_upload_date = models.DateField(null=True)
+    user_name = models.CharField(max_length=100,  null=True)
+    data_description = models.CharField(max_length=200,  null=True)
+    data_file_name = models.CharField(max_length=100,  null=True)
+    experiment_type = models.CharField(max_length=20,  null=True)
+    reference_number = models.CharField(max_length=20,  null=True)
+    reference_link = models.CharField(max_length=300,  null=True)
+
+    class Meta:
+        ordering = ['datafile_index']
+
+
 
 class PeptideSeq(models.Model):
        
@@ -18,26 +36,13 @@ class PeptideSeq(models.Model):
     reference_number = models.CharField(max_length=4,  null=True)
     reference_link = models.CharField(max_length=200,  null=True)
     data_file_name = models.CharField(max_length=60, null=True)
+
+    # This creates the foreign key relationship with cascade delete
+    uploaded_data = models.ForeignKey(UploadedData, on_delete=models.CASCADE, null=True)
     
     class Meta:
         ordering = ['db_id']
 
-class UploadedData(models.Model):
-
-    upload_type = models.CharField(max_length=10,  null=True) 
-    datafile_index = models.CharField(max_length=20,  null=True)
-    experiment_name = models.CharField(max_length=100,  null=True)
-    data_upload_time = models.TimeField(null=True)
-    data_upload_date = models.DateField(null=True)
-    user_name = models.CharField(max_length=100,  null=True)
-    data_description = models.CharField(max_length=200,  null=True)
-    data_file_name = models.CharField(max_length=100,  null=True)
-    experiment_type = models.CharField(max_length=20,  null=True)
-    reference_number = models.CharField(max_length=20,  null=True)
-    reference_link = models.CharField(max_length=300,  null=True)
-
-    class Meta:
-        ordering = ['datafile_index']
 
 class BugReporting(models.Model):
        

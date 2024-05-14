@@ -24,6 +24,38 @@
                     <h6 style="margin-top: 5px;">Updated on: {{data.release_date}}</h6>
                     </div>
                 </div>
+                <div class="container py-5">
+                    <div class="row g-5">
+                        <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.1s">
+                            <h5 class="text-secondary text-uppercase mb-3">Data backup</h5>
+                       
+                            <div class="d-flex align-items-center">
+                                <div class="col-12" >
+                                    <!-- <button class="btn btn-primary w-80 py-3" id="bugs-form-button" type="button">Download backup file</button> -->
+                                    <a href="{% url 'download_backup' %}" class="btn btn-primary">Download Backup</a>
+                                </div>
+                            </div>
+                        </div>
+                 
+                    </div>
+                </div>
+
+                <div class="container py-5">
+                    <div class="row g-5">
+                        <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.1s">
+                            <h5 class="text-secondary text-uppercase mb-3">Data Upload</h5>
+                       
+                            <div class="d-flex align-items-center">
+                                <div class="col-12" >
+                                    <!-- <button class="btn btn-primary w-80 py-3" id="bugs-form-button" type="button">Download backup file</button> -->
+                                    <a href="{% url 'upload_page' %}" class="btn btn-primary">Upload Data</a>
+                                </div>
+                            </div>
+                        </div>
+                 
+                    </div>
+                </div>
+                
             </div>
             <div class="col-lg-6">
                 <div class="row g-4 align-items-center">
@@ -51,39 +83,4 @@
         </div>
     </div>
 </div>
-
-<div class="container-xxl py-5" id="Statistics">
-    <div class="container py-5">
-        <div class="row g-5">
-            <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.1s">
-                <h5 class="text-secondary text-uppercase mb-3">Data backup</h5>
-           
-                <div class="d-flex align-items-center">
-                    <div class="col-12" >
-                        <!-- <button class="btn btn-primary w-80 py-3" id="bugs-form-button" type="button">Download backup file</button> -->
-                        <a href="{% url 'download_backup' %}" class="btn btn-primary">Download Backup</a>
-                    </div>
-                </div>
-            </div>
-     
-        </div>
-        
-    </div>
-    <div class="container py-5">
-        <div class="row g-5">
-            <div class="col-lg-6 wow fadeInUp" data-wow-delay="0.1s">
-                <h5 class="text-secondary text-uppercase mb-3">Upload data </h5>
-                <div class="col-12 col-sm-6 w-100">
-                    <select id="upload-type"class="form-select border-1" name="type" style="height: 55px;">
-                        <option value="newfile" selected="true">Select Data Upload Method</option>
-                        <option value="backup">Upload From a Backup File</option>
-                        <option value="newfile">Upload Data From New File</option>
-                       
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<script src="{% static 'js/user_activity.js' %}"></script>
 {% endblock %}

@@ -1,0 +1,15 @@
+#back_upload_button {
+    width: 120px;
+    height: 40px;
+    border: none; 
+    color: white;
+    background-color: rgb(229, 97, 97);
+}
+
+#back_upload_button:hover {
+    width: 120px;
+    height: 40px;
+    border: rgb(244, 205, 205); 
+    color: white;
+    background-color: rgb(247, 14, 14);
+}

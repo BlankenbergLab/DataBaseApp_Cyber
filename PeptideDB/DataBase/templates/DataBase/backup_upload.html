@@ -2,15 +2,12 @@
 {% load static %}
 {% block content %}
 
-    <script src="{% static 'js/test.js' %}"></script>
-
     <div style="margin: 20px;">
         <div class="col-lg-6 pe-lg-0 wow fadeInRight" data-wow-delay="0.1s" style="min-height: 400px;">
             {% csrf_token %}
             <div class="bg-light text-center p-5 wow fadeIn" data-wow-delay="0.5s">
                 {% csrf_token %}
-                <form>
-                    <div class="row g-3" id="bugs-form">
+                    <div class="row g-3" id="upload-form">
                         <div class="col-12 col-sm-6 w-100">
                             <h5 id="post-error"> </h5>
                         </div>
@@ -67,21 +64,13 @@
 
                         <div id='file_name_to_display'> </div>
 
+                        <div id="back_upload_button_div"> <button  id="back_upload_button" class="form-button" type="submit">Submit</button></div>
                     </div>
-                </form>
             </div>
         </div>
     </div>
 
 
-
-
-<div id="back_upload_button_div"> <button  id="back_upload_button" class="form-button" type="submit">Submit</button></div>
-    
-
     <!-- CSRF token -->
-
     <script src="{% static 'js/backup_upload.js' %}"></script> 
-
-
 {% endblock %}

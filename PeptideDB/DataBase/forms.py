@@ -2,8 +2,8 @@ from django import forms
 
 class dabase_form(forms.Form):
 
-    Sequence = forms.CharField(widget=forms.TextInput(attrs={'class':'form-control','placeholder':'Protein name; Ex. alpha', 'type':'text'}),required=False)
-    Accession = forms.CharField(widget=forms.TextInput(attrs={'class':'form-control','placeholder':'Uniprot ID; Ex. P46783', 'type':'text'}), required=False)
+    Sequence = forms.CharField(widget=forms.TextInput(attrs={'class':'form-control','placeholder':'Protein name, e.g., Biglycan', 'type':'text'}),required=False)
+    Accession = forms.CharField(widget=forms.TextInput(attrs={'class':'form-control','placeholder':'Uniprot ID, e.g., P21810', 'type':'text'}), required=False)
 
 class UploadFileForm(forms.Form):
     experiment_name = forms.CharField(widget=forms.TextInput(attrs={'class':'form-control','placeholder':'Name of the experiment'}),required=True)

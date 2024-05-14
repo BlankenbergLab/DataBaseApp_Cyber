@@ -139,6 +139,7 @@ def saveMetadata(metadata):
         # file_UUID= uuid.uuid4,
         )
     a.save()
+    return a
 
 def validate_data_file(file_path):
     headers = ['Protein Accession', 'Gene symbol', 'Protein name', 'Cleavage site', 'Peptide sequence', 'Annotated sequence', 'Cellular Compartment', 'Species', 'Database identified', 'Discription', 'Reference']
@@ -183,10 +184,9 @@ def success(request):
 def download_data_report(request):
     return render(request,  'DataBase/uploaded_data_report.html', {})
 
-def import_tsv_data_to_model(file_path, ref_num, ref_link):
+def import_tsv_data_to_model(file_path, ref_num, ref_link, uploaded_data):
 
     with open(file_path, 'r') as f:
-
             # Skip the first line
         f.readline()
 
@@ -235,6 +235,7 @@ def import_tsv_data_to_model(file_path, ref_num, ref_link):
                     reference_number=ref_num,
                     reference_link=ref_link,
                     data_file_name=file_name,
+                    uploaded_data= uploaded_data
                 )
 
                 new_objects.append(new_obj)
@@ -507,8 +508,7 @@ def upload_chunk(request):
         'user_name': str(request.user),
     }
 
-    saveMetadata(metadata)
-
+    
     # Sanitize the file_id and chunk_number to prevent path traversal
     safe_file_id = ''.join([c for c in file_id if c.isalnum()])
     safe_chunk_number = ''.join([c for c in chunk_number if c.isdigit()])
@@ -526,7 +526,7 @@ def upload_chunk(request):
         for chunk in file.chunks():
             f.write(chunk)
 
-    return JsonResponse({'status': 'success'})
+    return JsonResponse(metadata)
 
 @staff_member_required
 @csrf_exempt
@@ -534,7 +534,8 @@ def merge_chunks(request):
     file_id = request.GET.get('file_id', None)
     total_chunck = request.GET.get('total_chunck', None)
     file_name = request.GET.get('file_name', None)
-
+    metadata = request.GET.get('metadata', None)
+ 
     ref_link  =request.GET.get('exn')
     ref_num = request.GET.get('erl')
 
@@ -604,7 +605,8 @@ def merge_chunks(request):
     if file_name.split('.')[len(file_name.split('.'))-1] == 'tsv':
         validation = validate_data_file(final_path)
         if validation['validation']:
-            import_tsv_data_to_model(final_path, ref_num, ref_link)
+            uploaded_data = saveMetadata(json.loads(metadata))
+            import_tsv_data_to_model(final_path, ref_num, ref_link, uploaded_data)
             return HttpResponseRedirect('/errors/?message= : '+quote("Data Uploaded"))
         else:
             return HttpResponseRedirect('/errors/?message= Data Uploaded Failed, Error in Column name: '+quote(validation['error_column']))

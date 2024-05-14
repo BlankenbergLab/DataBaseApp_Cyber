@@ -18,21 +18,16 @@ function formValidation() {
 
     for (var i in var_list ){
         if(var_list[i][0] === ''){
-            console.log( document.querySelector(`${var_list[i][1]}`))
             document.querySelector(`${var_list[i][1]}`).style.backgroundColor = 'pink'
             return false
         } else{
-            document.querySelector(`${var_list[i][1]}`).style.border = ''
+            document.querySelector(`${var_list[i][1]}`).style.backgroundColor = ''
         }
     }
-
     return var_list
 }
 
-var values = formValidation()
 
-
-    // if( values) {
 var r = new Resumable({
     target: `/upload_chunk/?file_id=${'tsv'}`,
     chunkSize: 4 * 1024 * 1024,
@@ -50,10 +45,12 @@ r.on('fileAdded', function(file, event) {
 });
 
 r.on('fileSuccess', function(file, message) {
+
     console.log('File upload completed');
     var file_name = file.file.name
-    console.log(file.uniqueIdentifier)
-    window.location.href = `/merge_chunks/?file_id=${file.uniqueIdentifier}&total_chunck=${file.chunks.length}&file_name=${file_name}`
+    var exn = document.querySelector('#experiment_number').value
+    var erl = document.querySelector('#experiment_ref_link').value
+    window.location.href = `/merge_chunks/?file_id=${file.uniqueIdentifier}&total_chunck=${file.chunks.length}&file_name=${file_name}&exn=${exn}&erl=${erl}&metadata=${message}`
 });
 
 r.on('fileProgress', function(file) {
@@ -68,17 +65,9 @@ if  (document.querySelector('#back_upload_button')) {
         var values = formValidation()
         if(values){
             r.opts.target = `/upload_chunk/?upt=${values[0][0]}&ext=${values[1][0]}&ept=${values[2][0]}&exn${values[3][0]}&erl=${values[4][0]}&edt=${values[5][0]}`
+            r.upload()
         }
-        r.upload()
-    })
-}
-
-if (document.querySelector('#tsv_upload')){
-    document.querySelector('#tsv_upload').addEventListener('click', ()=>{
        
-        console.log("OK")
     })
 }
-
-
 

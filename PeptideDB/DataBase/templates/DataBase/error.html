@@ -3,7 +3,8 @@
 {% block content %}
 
 
-<div>
-    <h1> Status....: {{msg}}</h1> 
+<div style="margin:50px;">
+    <h3> Status....{{msg}}</h3> 
+    <a href="{% url 'user_activity' %}" class="nav-item nav-link">Go Back to User Dashboard</a>
 </div>
 {% endblock %}

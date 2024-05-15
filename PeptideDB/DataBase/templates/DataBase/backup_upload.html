@@ -2,7 +2,7 @@
 {% load static %}
 {% block content %}
 
-    <div style="margin: 20px;">
+    <div id='upload_form' style="margin: 20px;">
         <div class="col-lg-6 pe-lg-0 wow fadeInRight" data-wow-delay="0.1s" style="min-height: 400px;">
             {% csrf_token %}
             <div class="bg-light text-center p-5 wow fadeIn" data-wow-delay="0.5s">
@@ -63,6 +63,9 @@
                     </div>
             </div>
         </div>
+    </div>
+    <div id='data_upload_status' style="margin: 50px;">
+        <span> Uploading the Data..<i class="fa fa-spinner fa-spin" style="font-size:24px"></i></span> 
     </div>
 
      

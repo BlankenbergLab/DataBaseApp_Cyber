@@ -1,6 +1,9 @@
 
 const csrftoken = getCookie('csrftoken');
 
+document.querySelector('#upload_form').style.display = 'block'
+document.querySelector('#data_upload_status').style.display = 'none'
+
 function getCookie(name) {
     const cookieValue = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
     return cookieValue ? cookieValue.pop() : '';
@@ -94,10 +97,15 @@ r.on('fileProgress', function(file) {
 
 if  (document.querySelector('#back_upload_button')) {
     document.querySelector('#back_upload_button').addEventListener('click', ()=>{
+
+
+
         var values = formValidation()
         if(values){
             r.opts.target = `/upload_chunk/?upt=${values[0][0]}&ext=${values[1][0]}&ept=${values[2][0]}&erl=${values[3][0]}&edt=${values[4][0]}`
             r.upload()
+            document.querySelector('#upload_form').style.display = 'none'
+            document.querySelector('#data_upload_status').style.display = 'block'
         }
     })
 }

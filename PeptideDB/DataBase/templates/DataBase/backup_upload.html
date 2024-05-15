@@ -39,11 +39,6 @@
                         </div>
 
                         <div class="col-12 col-sm-6 w-100">
-                            <span> Reference Number </span>
-                            <input id="experiment_number" type="text" name="title" class="form-control border-0" placeholder="Reference Number" style="height: 55px;">
-                        </div>
-
-                        <div class="col-12 col-sm-6 w-100">
                             <span> Reference Link </span>
                             <input id="experiment_ref_link" type="text" name="title"  class="form-control border-0" placeholder="Reference Link" style="height: 55px;">
                         </div>
@@ -69,6 +64,58 @@
             </div>
         </div>
     </div>
+
+     
+ <div style="width:80%; float:left; overflow:scroll; background-color: rgb(219,220,214); margin:2%"> 
+    <div><h4 style="margin: 10px; color:red;"> Make sure before you upload a file: </h4> <p style="margin:10px; font-size:20px;"><b> Prepare a tab separated data-file in the given format and keep the column order as mentioned in the example below...</b></p></di> 
+    <table class="table table-bordered" style="margin:10px;">
+      <thead class="thead-dark">
+        <tr>
+            <th>Protein Accession</th>
+            <th>Gene Symbol</th>
+            <th>Protein name</th>
+            <th>Cleavage site</th>
+            <th>Peptide sequence</th>
+            <th>Annotated sequence</th>
+            <th>Cellular Compartment</th>
+            <th>Species </th>	
+            <th>Database identified </th>
+            <th>Discription</th>
+            <th>Reference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+        <td>Q778P6</td>
+        <td>ATEG</td>
+        <td>Cox 2 protein</td>
+        <td>1955</td>
+        <td>QILNEEVVEQ</td>
+        <td>[K].QILNEVVEQ.[R]</td>
+        <td>Cytoplasm</td>
+        <td>Mouse</td>
+        <td>OA-cartilage</td>
+        <td>NA</td>
+        <td>http://doi.org/10.1038/s41598-023-42576-2</td>
+        </tr>
+        <tr>
+        <td>Q7RTP6</td>
+        <td>MICAL3</td>
+        <td>[F-actin]-monooxygenase</td>
+        <td>1955</td>
+        <td>QILNEMLEVVEQ</td>
+        <td>[K].QILNEMLEVVEQ.[R]</td>
+        <td>Cytoplasm</td>
+        <td>Human</td>
+        <td>OA-cartilage</td>
+        <td>NA</td>
+        <td><a=f>http://doi.org/10.1038/s41598-023-42576-2<a/></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>  
+</div>
+
 
 
     <!-- CSRF token -->

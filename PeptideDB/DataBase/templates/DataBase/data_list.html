@@ -1,0 +1,23 @@
+{% extends 'DataBase/base.html' %}
+{% load static %}
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'css/table/custom.css' %}">
+
+<br>
+<div class="main">
+  {% for  items in datasets %}
+  <ul>
+    {% if items.upload_type != 'json'%}
+        <li><a href="{% url 'download_saved_data' %}?file_name={{  items.file_name }}" > <h6>({{ items.id }}) This file from {{ items.type}} experiment uploaded by {{items.user}} on {{items.date}} </h6> <p> {{ items.file_name }}</p></a></li>
+    {% endif %}
+
+    {% if items.upload_type == 'json'%}
+        <li><a href="{% url 'download_saved_data' %}?file_name={{  items.file_name }}" > <h6>({{ items.id }}) Backup file uploaded by {{items.user}} on {{items.date}} </h6> <p> {{ items.file_name }}</p></a></li>
+    {% endif %}
+    </ul>
+{% endfor %}
+
+</div>
+
+{% endblock %}

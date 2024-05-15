@@ -56,7 +56,7 @@ class PeptideSeqAdmin(ImportExportModelAdmin):
     list_display = ('db_id', 'accession', 'gene_symbol', 'protein_name', 'species')  # List view columns
     search_fields = ('db_id', 'accession', 'gene_symbol', 'protein_name')  # Searchable fields
     list_filter = ('species', 'gene_symbol')  # Filters for the admin list view
-    list_per_page = 10
+    list_per_page = 100
     
 
 # Other custom admin classes

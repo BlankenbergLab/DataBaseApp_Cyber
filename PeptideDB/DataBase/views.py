@@ -25,11 +25,7 @@ from django.contrib.auth.models import User
 from urllib.parse import quote
 
 all_users = User.objects.all()
-
-# print(all_users)
-
 base_dir = settings.MEDIA_ROOT
-
 
 # Function to sanitize paths to prevent path traversal attacks
 def sanitize_path(path):
@@ -38,7 +34,6 @@ def sanitize_path(path):
     # Ensure path does not start with '/' or drive letters to prevent absolute paths
     if safe_path.startswith(("/", "\\")) or (":" in safe_path and safe_path[1] == ":"):
         raise ValueError("Invalid path")
-    print("###", safe_path)
     return safe_path
 
 def errors(request):
@@ -56,7 +51,6 @@ def DB(request):
             version = '0.0.0' ,
             time_stamp = time_stamp(),
         )
-
         v.save()
 
     acv = len(set(list(PeptideSeq.objects.filter(accession__isnull=False).values_list('accession', flat=True))))
@@ -96,7 +90,6 @@ def DB(request):
             a.save()
 
             return HttpResponseRedirect('/success')
-
     else:
         Fasta = ''
         Acc = ''
@@ -112,7 +105,6 @@ def DB(request):
             )
         new_obj.save()
 
-
     meta_data = {
                 "version": DataBaseVersion.objects.latest('time_stamp').version,
                 "release_date": DataBaseVersion.objects.latest('time_stamp').time_stamp.split('.')[0],
@@ -120,26 +112,33 @@ def DB(request):
 
     return render(request, 'DataBase/index.html', {'form': form, 'acv':acv, 'clv':clv, 'meta_data':meta_data, 'is_authenticated':request.user.is_authenticated, 'host_name': request.get_host()})
 
-def saveMetadata(metadata):
+def saveMetadata(metadata, file_name):
     now = datetime.now()
-    dt_string = now.strftime("%d_%m_%Y__%H_%M_%S")
-    file_name = "CleavageDB_"+dt_string+'_data_file.csv'
-    a = UploadedData.objects.create(
-        datafile_index='DBF'+str(len(UploadedData.objects.all())),
-        experiment_name=metadata['experiment_title'],
-        data_upload_date=now.strftime("%Y-%m-%d"),
-        data_upload_time=now.strftime("%H:%M:%S"),
-        user_name=metadata['user_name'],
-        data_description=metadata['experiment_description'],
-        data_file_name=file_name,
-        experiment_type=metadata['experiment_type'],
-        reference_number=metadata['reference_number'],
-        reference_link=metadata['reference_link'],
-        upload_type=metadata['upload_type']
-        # file_UUID= uuid.uuid4,
-        )
-    a.save()
-    return a
+    # dt_string = now.strftime("%d_%m_%Y__%H_%M_%S")
+    # file_name = "CleavageDB_"+dt_string+'_data_file.'+metadata['upload_type']
+
+    existing_object = UploadedData.objects.filter(data_file_name=file_name).first()
+
+    # If an object with the same file name exists, return it
+    if existing_object:
+        return False
+
+    else:
+        a = UploadedData.objects.create(
+            datafile_index='DBF'+str(len(UploadedData.objects.all())),
+            experiment_name=metadata['experiment_title'],
+            data_upload_date=now.strftime("%Y-%m-%d"),
+            data_upload_time=now.strftime("%H:%M:%S"),
+            user_name=metadata['user_name'],
+            data_description=metadata['experiment_description'],
+            data_file_name=file_name,
+            experiment_type=metadata['experiment_type'],
+            reference_link=metadata['reference_link'],
+            upload_type=metadata['upload_type']
+            # file_UUID= uuid.uuid4,
+            )
+        a.save()
+        return a
 
 def validate_data_file(file_path):
     headers = ['Protein Accession', 'Gene symbol', 'Protein name', 'Cleavage site', 'Peptide sequence', 'Annotated sequence', 'Cellular Compartment', 'Species', 'Database identified', 'Discription', 'Reference']
@@ -148,15 +147,12 @@ def validate_data_file(file_path):
     # Read the first line from the file
         line = file.readline()
         for i, h in enumerate(line.replace('\r\n', '').split('\t')):
-            print(h.strip('\n'), headers[i])
             if h.strip('\n') == headers[i]:
                 pass
             else:
-                print('#####', i, h)
                 return {"validation": False, "error_column": h}
         return {'validation': True, "error_column": None}
     
-
 @csrf_protect
 def bugs(request):
 
@@ -184,7 +180,7 @@ def success(request):
 def download_data_report(request):
     return render(request,  'DataBase/uploaded_data_report.html', {})
 
-def import_tsv_data_to_model(file_path, ref_num, ref_link, uploaded_data):
+def import_tsv_data_to_model(file_path, ref_link, uploaded_data):
 
     with open(file_path, 'r') as f:
             # Skip the first line
@@ -216,8 +212,7 @@ def import_tsv_data_to_model(file_path, ref_num, ref_link, uploaded_data):
                 species=chunks[7],
                 database_identified=chunks[8],
                 description=chunks[9],
-                # reference_number=ref_num,
-                # reference_link=ref_link,
+                reference_link=ref_link,
             ).exists():
                 count += 1
                 new_obj = PeptideSeq(
@@ -232,7 +227,6 @@ def import_tsv_data_to_model(file_path, ref_num, ref_link, uploaded_data):
                     species=chunks[7],
                     database_identified=chunks[8],
                     description=chunks[9],
-                    reference_number=ref_num,
                     reference_link=ref_link,
                     data_file_name=file_name,
                     uploaded_data= uploaded_data
@@ -319,7 +313,6 @@ def return_merge_peptidedata(retrived_peps):
         species=[] 
         database_identified=[] 
         description=[]
-        reference_number=[]
         reference_link=[]
         data_file_name=[]
 
@@ -337,7 +330,6 @@ def return_merge_peptidedata(retrived_peps):
                 species.append(record['fields']['species'])
                 database_identified.append(record['fields']['database_identified'])
                 description.append(record['fields']['description'])
-                reference_number.append(record['fields']['reference_number'])
                 reference_link.append(record['fields']['reference_link'])
                 data_file_name.append(record['fields']['data_file_name'])
 
@@ -354,7 +346,6 @@ def return_merge_peptidedata(retrived_peps):
                             'species':", ".join(list(set(species))), 
                             'database_identified':", ".join(list(set(database_identified))), 
                             'description':", ".join(list(set(description))), 
-                            'reference_number':list(set(reference_number)), 
                             'reference_link':list(set(reference_link)), 
                             'data_file_name':", ".join(list(set(data_file_name))),
                         }
@@ -401,7 +392,6 @@ def load_data(request):
 
 @staff_member_required
 def download_backup(request):
-
     h = DataBaseVersion.objects.latest('time_stamp')
     f_name = h.version.replace('.', '_')+"_back_up.json"
 
@@ -421,7 +411,7 @@ def upload_backup(request):
     return render(request, 'load_data_from_backup_file.html')
     
 def fileUploader(request):
-    print('OK')
+
     if request.method == 'POST':  
         file = request.FILES['file'].read()
         fileName =  os.path.basename(request.POST['filename'])
@@ -502,12 +492,10 @@ def upload_chunk(request):
         'upload_type': request.GET.get('upt'),
         'experiment_type': request.GET.get('ext'),
         'experiment_title': request.GET.get('ept'),
-        'reference_number': request.GET.get('exn'),
         'reference_link': request.GET.get('erl'),
         'experiment_description': request.GET.get('edt'),
         'user_name': str(request.user),
     }
-
     
     # Sanitize the file_id and chunk_number to prevent path traversal
     safe_file_id = ''.join([c for c in file_id if c.isalnum()])
@@ -534,10 +522,8 @@ def merge_chunks(request):
     file_id = request.GET.get('file_id', None)
     total_chunck = request.GET.get('total_chunck', None)
     file_name = request.GET.get('file_name', None)
-    metadata = request.GET.get('metadata', None)
- 
-    ref_link  =request.GET.get('exn')
-    ref_num = request.GET.get('erl')
+    metadata = request.GET.get('metadata', None) 
+    ref_link = request.GET.get('erl')
 
     if not file_id or not total_chunck or not file_name:
         # Handle the case where any parameter is None
@@ -579,7 +565,6 @@ def merge_chunks(request):
                 with open(chunk_path, 'rb') as chunk:
                     final_file.write(chunk.read())
                 # os.remove(chunk_path)
-
     except IOError as e:
         # Handle general IO errors (e.g., disk full, file not found, etc.)
         return HttpResponseRedirect('/errors/?message=' + quote(str(e)))
@@ -605,20 +590,22 @@ def merge_chunks(request):
     if file_name.split('.')[len(file_name.split('.'))-1] == 'tsv':
         validation = validate_data_file(final_path)
         if validation['validation']:
-            uploaded_data = saveMetadata(json.loads(metadata))
-            import_tsv_data_to_model(final_path, ref_num, ref_link, uploaded_data)
-            return HttpResponseRedirect('/errors/?message= : '+quote("Data Uploaded"))
+            uploaded_data = saveMetadata(json.loads(metadata), file_name)
+            if uploaded_data:
+                import_tsv_data_to_model(final_path, ref_link, uploaded_data)
+                return HttpResponseRedirect('/errors/?message= : '+quote("Data Uploaded"))
+            else:
+                return HttpResponseRedirect('/errors/?message= : '+quote("File already exist.."))
         else:
             return HttpResponseRedirect('/errors/?message= Data Uploaded Failed, Error in Column name: '+quote(validation['error_column']))
 
     if file_name.split('.')[len(file_name.split('.'))-1] == 'json':
-        return HttpResponseRedirect('/load_backupdata/?file_name=' + quote(file_name))
-    
-    # elif file_name.split('.')[len(file_name.split('.'))-1] == 'tvs':
-
-    #     print("##################")
-    #     
-    #     return HttpResponseRedirect('/load_backupdata/?file_name=' + quote(file_name))
+        uploaded_data = saveMetadata(json.loads(metadata), file_name)
+        if uploaded_data:
+            import_json_data_to_model(final_path,  uploaded_data)
+            return HttpResponseRedirect('/errors/?message= : '+quote("Data Uploaded"))
+        else:
+            return HttpResponseRedirect('/errors/?message= : '+quote("File already exist.."))
 
 @staff_member_required
 def upload_page(request):
@@ -629,19 +616,8 @@ def upload_complete(request):
     file_name = request.GET.get('file_name', None)
     return render(request, 'DataBase/upload_complete.html', {'file_name': request.GET.get('file_name', None)})
 
-@staff_member_required
-@csrf_protect
-def load_backupdata(request):
-    file_name = request.GET.get('file_name', None)
-    file_name = os.path.basename(file_name)
 
-    if not file_name:
-        return HttpResponseRedirect('/error/?message=' + quote("file is not available " +  file_name ))
-
-    backup_file_path = os.path.join(settings.UPLOAD_BACKUP, file_name)
-
-    if not os.path.exists(backup_file_path):
-        return HttpResponseRedirect('/error/?message='+ quote("file is not found" +  file_name ))
+def import_json_data_to_model(backup_file_path, uploaded_data):
 
     with open(backup_file_path, 'r') as file:
         data = json.load(file)
@@ -689,9 +665,9 @@ def load_backupdata(request):
                         species=fields.get('species'),
                         database_identified=fields.get('database_identified'),
                         description=fields.get('description'),
-                        reference_number=fields.get('reference_number'),
                         reference_link=fields.get('reference_link'),
-                        data_file_name=file_name,
+                        data_file_name=backup_file_path.split('/')[len(backup_file_path.split('/'))-1],
+                        uploaded_data= uploaded_data,
                     )
                 )
 
@@ -744,10 +720,24 @@ def load_backupdata(request):
         File.objects.bulk_create(new_files)
 
     # Clean up by removing the backup file
-    try:
-        # os.remove(backup_file_path)
-        print("Hello")
-    except Exception as e:
-        print(f"Error removing backup file: {e}")
+    # try:
+    #     # os.remove(backup_file_path)
+    #     print("Hello")
+    # except Exception as e:
+    #     print(f"Error removing backup file: {e}")
+@staff_member_required
+def data_list(request):
+    datasets = []
+    all_uploaded_data = UploadedData.objects.all()
+    for i in all_uploaded_data:
+        datasets.append({'id':i.datafile_index, 'file_name':i.data_file_name, 'upload_type':i.upload_type, 'user': i.user_name, 'type': i.experiment_type, 'date':i.data_upload_date })
+    return render(request, 'DataBase/data_list.html', {'datasets': datasets})
 
-    return render(request, 'DataBase/upload_complete.html', {})
+@staff_member_required
+def download_saved_data(request):
+    f_name = request.GET.get('file_name')
+    output = StringIO()
+    call_command('dumpdata', stdout=output)
+    response = HttpResponse(output.getvalue(), content_type='application/json')
+    response['Content-Disposition'] = 'attachment; filename='+f_name
+    return response

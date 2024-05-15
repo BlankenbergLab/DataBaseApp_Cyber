@@ -63,7 +63,7 @@ function table_content(data){
         var ref_list = []
 
         for (var j = 0; j < data[i].reference_link.length;  j++) {
-            ref_list.push(`<a href=${data[i].reference_link[j]} target="_blank" rel="noopener noreferrer" >${data[i].reference_number[j]}</a>`)
+            ref_list.push(`<a href=http://doi.org/${data[i].reference_link[j]} target="_blank" rel="noopener noreferrer" >${data[i].reference_link[j]}</a>`)
         }
        
         row.innerHTML  =   `<td>${i+1}</td>

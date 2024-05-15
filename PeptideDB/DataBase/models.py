@@ -12,13 +12,10 @@ class UploadedData(models.Model):
     data_description = models.CharField(max_length=200,  null=True)
     data_file_name = models.CharField(max_length=100,  null=True)
     experiment_type = models.CharField(max_length=20,  null=True)
-    reference_number = models.CharField(max_length=20,  null=True)
     reference_link = models.CharField(max_length=300,  null=True)
 
     class Meta:
         ordering = ['datafile_index']
-
-
 
 class PeptideSeq(models.Model):
        
@@ -33,7 +30,6 @@ class PeptideSeq(models.Model):
     species = models.CharField(max_length=50,  null=True)
     database_identified = models.CharField(max_length=50,  null=True)
     description = models.CharField(max_length=200,  null=True)
-    reference_number = models.CharField(max_length=4,  null=True)
     reference_link = models.CharField(max_length=200,  null=True)
     data_file_name = models.CharField(max_length=60, null=True)
 

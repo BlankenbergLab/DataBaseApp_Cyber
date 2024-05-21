@@ -20,11 +20,11 @@ var query_des = document.getElementById('hostname').getAttribute('data-des');
 // var table_data 
 
 if (query_acc != 'undefined' && query_des == 'undefined'){
-    var link = `http://${hostname}/PepView/?acc=${query_acc}`
+    var link = `https://${hostname}/PepView/?acc=${query_acc}`
 } else if (query_acc== 'undefined' && query_des != 'undefined'){
-   var link = `http://${hostname}/PepView/?des=${query_des}`
+   var link = `https://${hostname}/PepView/?des=${query_des}`
 } else if (query_acc != 'undefined' && query_des != 'undefined'){
-   var link = `http://${hostname}/PepView/?acc=${query_acc}&des=${query_des}`
+   var link = `https://${hostname}/PepView/?acc=${query_acc}&des=${query_des}`
 }
 
 getJSON(link,
@@ -63,7 +63,7 @@ function table_content(data){
         var ref_list = []
 
         for (var j = 0; j < data[i].reference_link.length;  j++) {
-            ref_list.push(`<a href=http://doi.org/${data[i].reference_link[j]} target="_blank" rel="noopener noreferrer" >${data[i].reference_link[j]}</a>`)
+            ref_list.push(`<a href=https://doi.org/${data[i].reference_link[j]} target="_blank" rel="noopener noreferrer" >${data[i].reference_link[j]}</a>`)
         }
        
         row.innerHTML  =   `<td>${i+1}</td>

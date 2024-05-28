@@ -20,11 +20,11 @@ var query_des = document.getElementById('hostname').getAttribute('data-des');
 // var table_data 
 
 if (query_acc != 'undefined' && query_des == 'undefined'){
-    var link = `https://${hostname}/PepView/?acc=${query_acc}`
+    var link = `http://${hostname}/PepView/?acc=${query_acc}`
 } else if (query_acc== 'undefined' && query_des != 'undefined'){
-   var link = `https://${hostname}/PepView/?des=${query_des}`
+   var link = `http://${hostname}/PepView/?des=${query_des}`
 } else if (query_acc != 'undefined' && query_des != 'undefined'){
-   var link = `https://${hostname}/PepView/?acc=${query_acc}&des=${query_des}`
+   var link = `http://${hostname}/PepView/?acc=${query_acc}&des=${query_des}`
 }
 
 getJSON(link,
@@ -102,8 +102,9 @@ function JSONToCSVConvertor(JSONData, ReportTitle) {
     var arrData = typeof JSONData != 'object' ? JSON.parse(JSONData) : JSONData;
     var arrData = JSONData
 
+
     var CSV = '';
-    CSV += `ID\tPeptide Sequence\tAccession\tGene symbol\tProtein name\tCleavage side\tAbundance sequence\tCellular compartment\tSpecies\tDatabase identified\tDescription\tReference\tLink\r\n`
+    CSV += `ID\tPeptide Sequence\tAccession\tGene symbol\tProtein name\tCleavage Site P1 Residue\tAnnotated Sequence\tCellular compartment\tSpecies\tSource\tDescription\tReference\r\n`
 
     for (var i = 0; i < arrData.length; i++) {
         var row = "";
